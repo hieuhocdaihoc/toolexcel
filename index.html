@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Công cụ Định Dạng Google Sheet Công Ty</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f0f2f5; margin: 0; padding: 40px; color: #333; }
+        .container { max-width: 600px; margin: auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        h1 { text-align: center; color: #1a73e8; }
+        .step { background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #e0e0e0; }
+        input[type="text"] { width: 100%; padding: 10px; margin-top: 10px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; }
+        button { background: #1a73e8; color: white; border: none; padding: 12px 20px; margin-top: 15px; border-radius: 6px; cursor: pointer; width: 100%; font-size: 16px; font-weight: bold; }
+        button:hover { background: #1557b0; }
+        .btn-green { background: #0f9d58; }
+        .btn-green:hover { background: #0b8043; }
+        input[type="file"] { margin-top: 15px; width: 100%; }
+        #loading { display: none; text-align: center; margin-top: 15px; color: #f29900; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>🚀 Tool Định Dạng Sheet</h1>
+    
+    <!-- Bước 1 -->
+    <div class="step">
+        <h3>BƯỚC 1: Tải file thô về máy</h3>
+        <p>Dán link Google Sheet vào đây. Trình duyệt của bạn sẽ dùng tài khoản công ty để tải file thô về an toàn.</p>
+        <input type="text" id="sheetUrl" placeholder="Ví dụ: https://docs.google.com/spreadsheets/d/...">
+        <button onclick="downloadRaw()">📥 1. Tải File Thô (An toàn)</button>
+    </div>
+
+    <!-- Bước 2 -->
+    <div class="step">
+        <h3>BƯỚC 2: Định dạng (Kẻ bảng, tô màu)</h3>
+        <p>Chọn file thô bạn vừa tải về ở Bước 1. Hệ thống sẽ tự động tô màu các Trạng thái, kẻ bảng và bật Filter.</p>
+        <input type="file" id="fileInput" accept=".xlsx">
+        <button class="btn-green" onclick="formatFile()">✨ 2. Bấm để Nhận File Đẹp</button>
+        <div id="loading">⏳ Đang tô màu và định dạng, vui lòng đợi vài giây...</div>
+    </div>
+</div>
+
+<script>
+    function downloadRaw() {
+        let url = document.getElementById("sheetUrl").value.trim();
+        let match = url.match(/\/d\/([a-zA-Z0-9-_]+)/);
+        if (match && match[1]) {
+            let exportUrl = "https://docs.google.com/spreadsheets/d/" + match[1] + "/export?format=xlsx";
+            window.open(exportUrl, "_blank");
+        } else {
+            alert("❌ Link không hợp lệ! Vui lòng kiểm tra lại.");
+        }
+    }
+
+    async function formatFile() {
+        let fileInput = document.getElementById("fileInput");
+        if (fileInput.files.length === 0) {
+            alert("❌ Vui lòng chọn file Excel thô vừa tải về!");
+            return;
+        }
+
+        let file = fileInput.files[0];
+        let formData = new FormData();
+        formData.append("file", file);
+
+        document.getElementById("loading").style.display = "block";
+
+        try {
+            let response = await fetch('/api/format', {
+                method: 'POST',
+                body: formData
+            });
+
+            if (!response.ok) {
+                alert("❌ Lỗi hệ thống, không thể định dạng file.");
+                document.getElementById("loading").style.display = "none";
+                return;
+            }
+
+            // Tải file về
+            let blob = await response.blob();
+            let url = window.URL.createObjectURL(blob);
+            let a = document.createElement('a');
+            a.href = url;
+            // Lấy tên file gốc thêm chữ _Formatted
+            let newName = file.name.replace('.xlsx', '_Formatted.xlsx');
+            a.download = newName;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            
+            document.getElementById("loading").style.display = "none";
+            alert("✅ Thành công! File đã được tô màu và tải xuống máy bạn.");
+        } catch (error) {
+            alert("❌ Có lỗi xảy ra: " + error.message);
+            document.getElementById("loading").style.display = "none";
+        }
+    }
+</script>
+
+</body>
+</html>
